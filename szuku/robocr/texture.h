@@ -5,7 +5,6 @@
 using namespace std;
 
 
-
 class texture
 {
 public:
@@ -35,7 +34,7 @@ public:
 	void special_reduce();
 	void noise_reduction();
 	texture find_letters(vector<pair<int, int> > positions);
-	pair<unsigned int, pair<unsigned int, unsigned int> > special_xor(string filename, unsigned int posx, unsigned int posy, bool change);
+	pair<unsigned int, pair<unsigned int, unsigned int> > special_xor(string filename, unsigned int posx, unsigned int posy, bool speed);
 	bool Load(const char *filename);
 	void export_letters(string dir, string pattern, string letters_dir, string ret);
 	vector<pair<int, int> > find_positions();
@@ -44,6 +43,7 @@ public:
 	void leters_recover(texture &output, vector<pair<pair<unsigned int, pair<unsigned int, unsigned int> >, string> > values, unsigned int let);
 	void fill(char val);
 	void smooth();
+	void special_sort(vector<pair<pair<unsigned int, pair<unsigned int, unsigned int> >, string> > &values);
 };
 
 

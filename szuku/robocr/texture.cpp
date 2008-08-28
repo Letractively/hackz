@@ -17,9 +17,10 @@
 using namespace std;
 
 unsigned int my_width = 28;
-unsigned int my_height = 28;
+unsigned int my_height = 26;
 unsigned int letter_width = 24;
 unsigned int letter_height = 24;
+unsigned int recover_letters = 5;
 
 bool texture::Load(const char *filename)			// Loads A TGA File Into Memory
 {    
@@ -436,7 +437,7 @@ texture texture::find_letters(vector<pair<int, int> > positions)
 }
 
 map<string, texture> memory;
-pair<unsigned int, pair<unsigned int, unsigned int> > texture::special_xor(string filename, unsigned int posx, unsigned int posy, bool change)
+pair<unsigned int, pair<unsigned int, unsigned int> > texture::special_xor(string filename, unsigned int posx, unsigned int posy, bool speed)
 {
 	texture cbmp;
 	if(memory.find(filename) == memory.end())
@@ -449,7 +450,24 @@ pair<unsigned int, pair<unsigned int, unsigned int> > texture::special_xor(strin
 		cbmp = memory[filename];
 	}
 	vector<pair<unsigned int, pair<unsigned int, unsigned int> > > values;
-
+	if(speed)
+	{
+		unsigned int i = (my_width - letter_width)/2;
+		unsigned int j = (my_height - letter_height)/2;
+		unsigned int rval = 0;
+		for(unsigned int k = 0; k < letter_width; ++k)
+		{
+			for(unsigned int l = 0; l < letter_height; ++l)
+			{
+				unsigned int dst = abs(cbmp.pixel(k, l, 2) - pixel(posx + i + k, posy + j + l, 2));
+				rval += dst;
+			}
+		}
+		pair<unsigned int, unsigned int> pos(i, j);
+		return pair<unsigned int, pair<unsigned int, unsigned int> >(rval, pos);
+	}
+	else
+	{
 	for(unsigned int i = 0; i <= my_width - letter_width; ++i)
 	{
 		for(unsigned int j = 0; j <= my_height - letter_height; ++j)
@@ -467,28 +485,8 @@ pair<unsigned int, pair<unsigned int, unsigned int> > texture::special_xor(strin
 			values.push_back(pair<unsigned int, pair<unsigned int, unsigned int> >(rval, pos));
 		}
 	}
-
-
-	if(change)
-	{
-		unsigned int mposx = min_element(values.begin(), values.end())->second.first;
-		unsigned int mposy = min_element(values.begin(), values.end())->second.second;
-
-		for(unsigned int i = 0; i < letter_width; ++i)
-		{
-			for(unsigned int j = 0; j < letter_height; ++j)
-			{
-				char b = abs(cbmp.pixel(i, j, 0) - pixel(posx + mposx + i, posy + mposy + j, 0));
-				char g = abs(cbmp.pixel(i, j, 1) - pixel(posx + mposx + i, posy + mposy + j, 1));
-				char r = abs(cbmp.pixel(i, j, 2) - pixel(posx + mposx + i, posy + mposy + j, 2));
-				this->set_pixel(posx + mposx + i, posy + mposy + j, 0, 255 - b);
-				this->set_pixel(posx + mposx + i, posy + mposy + j, 1, 255 - g);
-				this->set_pixel(posx + mposx + i, posy + mposy + j, 2, 255 - r);
-			}
-		}
-	}
-
 	return *min_element(values.begin(), values.end());
+	}
 }
 
 void texture::export_letters(string dir, string pattern, string letters_dir, string ret)
@@ -499,13 +497,13 @@ void texture::export_letters(string dir, string pattern, string letters_dir, str
 	{
 		vector<string> lst1 = getdir(dir);
 		vector<string> lst2 = getdir(letters_dir);
-		char min_n = '0';
+		unsigned int min_n = 0;
 		for(unsigned int i = 0; i < lst1.size(); ++i)
-			if(pattern[l] == lst1[i][lst1[i].size()-6] && lst1[i][lst1[i].size()-5] >= min_n)
-				min_n = lst1[i][lst1[i].size()-5] + 1;
+			if(pattern[l] == tname_to_char(lst1[i]) && tname_to_int(lst1[i]) >= min_n)
+				min_n = tname_to_int(lst1[i]) + 1;
 		for(unsigned int i = 0; i < lst2.size(); ++i)
-			if(pattern[l] == lst2[i][lst2[i].size()-6] && lst2[i][lst2[i].size()-5] >= min_n)
-				min_n = lst2[i][lst2[i].size()-5] + 1;
+			if(pattern[l] == tname_to_char(lst2[i]) && tname_to_int(lst2[i]) >= min_n)
+				min_n = tname_to_int(lst2[i]) + 1;
 
 		texture tmp(letter_width, letter_height);
 		for(unsigned int i = 0; i < letter_width; ++i)
@@ -518,14 +516,18 @@ void texture::export_letters(string dir, string pattern, string letters_dir, str
 			}
 		}
 		if(pattern[l] != ret[l])
-			tmp.write(dir + pattern[l] + min_n + ".bmp", 100);
+		{
+			char pom[255];
+			sprintf(pom, "%02d\0", min_n);
+			tmp.write(dir + pattern[l] + pom + ".bmp", 100);
+		}
 	}
 }
 
 void texture::leters_recover(texture &output, vector<pair<pair<unsigned int, pair<unsigned int, unsigned int> >, string> > values, unsigned int let)
 {
-	if(values.size() < 10) return;
-	for(unsigned int m = 0; m < 10; ++m)
+	if(values.size() < recover_letters) return;
+	for(unsigned int m = 0; m < recover_letters; ++m)
 	{
 		texture cbmp;
 #ifdef _WIN32
@@ -554,9 +556,9 @@ void texture::leters_recover(texture &output, vector<pair<pair<unsigned int, pai
  
 				if(ip >= posx && ip < (posx + letter_width) && jp >= posy && jp < (posx + letter_height))
 				{
-					b = (255 - (255 - this->pixel(ip + let*my_width, jp, 0))*(255 - cbmp.pixel(ip - posx, jp - posy, 0))/256)/10;
-					g = (255 - (255 - this->pixel(ip + let*my_width, jp, 1))*(255 - cbmp.pixel(ip - posx, jp - posy, 1))/256)/10;
-					r = (255 - (255 - this->pixel(ip + let*my_width, jp, 2))*(255 - cbmp.pixel(ip - posx, jp - posy, 2))/256)/10;
+					b = (255 - (255 - this->pixel(ip + let*my_width, jp, 0))*(255 - cbmp.pixel(ip - posx, jp - posy, 0))/256)/recover_letters;
+					g = (255 - (255 - this->pixel(ip + let*my_width, jp, 1))*(255 - cbmp.pixel(ip - posx, jp - posy, 1))/256)/recover_letters;
+					r = (255 - (255 - this->pixel(ip + let*my_width, jp, 2))*(255 - cbmp.pixel(ip - posx, jp - posy, 2))/256)/recover_letters;
 				}
 				output.set_pixel(ip + let*my_width, jp, 0, output.pixel(ip + let*my_width, jp, 0) + b);
 				output.set_pixel(ip + let*my_width, jp, 1, output.pixel(ip + let*my_width, jp, 1) + g);
@@ -564,6 +566,11 @@ void texture::leters_recover(texture &output, vector<pair<pair<unsigned int, pai
 			}
 		}
 	}
+}
+
+void texture::special_sort(vector<pair<pair<unsigned int, pair<unsigned int, unsigned int> >, string> > &values)
+{
+	sort(values.begin(), values.end());
 }
 
 
