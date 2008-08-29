@@ -44,6 +44,7 @@ public:
 	void fill(char val);
 	void smooth();
 	void special_sort(vector<pair<pair<unsigned int, pair<unsigned int, unsigned int> >, string> > &values);
+	void estimate_letter(unsigned int posx1 = 0, unsigned int posy1 = 0, unsigned int posx2 = 0, unsigned int posy2 = 0);
 };
 
 

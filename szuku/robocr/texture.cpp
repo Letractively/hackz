@@ -17,7 +17,7 @@
 using namespace std;
 
 unsigned int my_width = 28;
-unsigned int my_height = 26;
+unsigned int my_height = 28;
 unsigned int letter_width = 24;
 unsigned int letter_height = 24;
 unsigned int recover_letters = 5;
@@ -444,6 +444,7 @@ pair<unsigned int, pair<unsigned int, unsigned int> > texture::special_xor(strin
 	{
 		if(!cbmp.Load(filename.c_str())) return pair<unsigned int, pair<unsigned int, unsigned int> >(-1, pair<unsigned int, unsigned int>(-1, -1));
 		memory[filename] = cbmp;
+		cbmp.estimate_letter();
 	}
 	else
 	{
@@ -539,6 +540,7 @@ void texture::leters_recover(texture &output, vector<pair<pair<unsigned int, pai
 		{
 			if(!cbmp.Load(filename.c_str())) return;
 				memory[filename] = cbmp;
+				cbmp.estimate_letter();
 		}
 		else
 		{
@@ -550,9 +552,9 @@ void texture::leters_recover(texture &output, vector<pair<pair<unsigned int, pai
 		{
 			for(unsigned int jp = 0; jp < my_height; ++jp)
 			{
-				int b = 25;
-				int g = 25;
-				int r = 25;
+				int b = 255/recover_letters;
+				int g = 255/recover_letters;
+				int r = 255/recover_letters;
  
 				if(ip >= posx && ip < (posx + letter_width) && jp >= posy && jp < (posx + letter_height))
 				{
@@ -571,6 +573,42 @@ void texture::leters_recover(texture &output, vector<pair<pair<unsigned int, pai
 void texture::special_sort(vector<pair<pair<unsigned int, pair<unsigned int, unsigned int> >, string> > &values)
 {
 	sort(values.begin(), values.end());
+}
+
+void texture::estimate_letter(unsigned int posx1, unsigned int posy1, unsigned int posx2, unsigned int posy2)
+{
+	unsigned int avg = 0;
+	unsigned int cnt = 0;
+	if(posx2 == 0) posx2 = this->width;
+	if(posy2 == 0) posy2 = this->height;
+
+	for(unsigned int i = posx1; i < posx2; ++i)
+	{
+		for(unsigned int j = posy1; j < posy2; ++j)
+		{
+			if(pixel(i, j, 2) <= 128)
+			{
+				avg += pixel(i, j, 2);
+				cnt++;
+			}
+		}
+	}
+	if(cnt != 0) avg /= cnt;
+
+	for(unsigned int i = posx1; i < posx2; ++i)
+	{
+		for(unsigned int j = posy1; j < posy2; ++j)
+		{
+			double alpha = (double)127.0/(255.0 - avg);
+			unsigned int r = pixel(i, j, 2)*alpha + 255.0*(1.0 - alpha);
+			if(r <= 0)   r = 0;
+			if(r >= 255) r = 255;
+
+			this->set_pixel(i, j, 0, r);
+			this->set_pixel(i, j, 1, r);
+			this->set_pixel(i, j, 2, r);
+		}
+	}
 }
 
 

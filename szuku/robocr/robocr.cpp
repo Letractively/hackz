@@ -31,6 +31,8 @@ int main(int argc, char **argv)
 	tmp.clear();
 	texture tmp3(tmp2.width, tmp2.height);
 	tmp3.fill(0);
+	for(unsigned int j = 0; j < 6; ++j)
+		t2.estimate_letter(my_width*j, 0, my_width*(j+1), my_height);
 					 
 	string ret = "";
 	vector<string> files = getdir(dir);
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
 						 }
 					 }
 
-					 t2.add(tmp3, -512, 2);
+					 t2.add(tmp3, -384, 1.5);
 //					 t2.smooth();
 
  					 for(unsigned int j = 0; j < 6; ++j)
